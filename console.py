@@ -1088,6 +1088,8 @@ if __name__ == '__main__':
         console.build_clients(reconfig_client_dir)
     elif arg == "sync_server":
         console.sync_server()
+    elif arg == "reboot_servers":
+        console.reboot_servers()
     elif arg == "sync_client":
         console.sync_client()
     elif arg == 'run_switch':
