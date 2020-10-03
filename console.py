@@ -49,6 +49,7 @@ class RSCSConsole(object):
 
         return std_output
 
+    # Sset up ssh connections
     def connect(self, hosts, conns):
         for host in hosts:
             client = SSHClient()
@@ -71,6 +72,7 @@ class RSCSConsole(object):
         for client_conn in self.client_conns:
             self.exe(client_conn, f'apt-get install libgsl-dev', sudo=True, bg=True)
 
+    # Install dpdk-16.11.1 and set up correct env variables
     def install_dpdk(self):
         if self.client_conns == []:
             self.connect(clients, self.client_conns)
@@ -131,11 +133,11 @@ class RSCSConsole(object):
         else:
             time.sleep(60)
 
+    # Build customized dpdk for r2p2 servers
     def setup_r2p2_server(self):
         if self.server_conns == []:
             self.connect(servers, self.server_conns)
 
-        # Build customized dpdk
         for server_conn in self.server_conns:
             self.exe(
                 server_conn, f'cd {R2P2_RTE_SDK}; echo {server_conn["password"]} | sudo -S rm -rf x86_64-native-linuxapp-gcc; make install T={RTE_TARGET} DESTDIR={R2P2_RTE_SDK}',
@@ -147,11 +149,11 @@ class RSCSConsole(object):
         # Wait for building customized dpdk
         time.sleep(180)
 
+    # Install GSL and DPDK on clients
     def setup_clients(self):
         if self.client_conns == []:
             self.connect(clients, self.client_conns)
 
-        # Install GSL and DPDK
         self.install_gsl()
         self.install_dpdk()
 
@@ -160,6 +162,7 @@ class RSCSConsole(object):
         self.setup_r2p2_server()
         self.setup_clients()
 
+    # Set the correct configuration (e.g., preemption_delay, host_addr) in shinjuku.conf
     def config_servers(self, rocks_db=False, r2p2=False):
         # No need to configure r2p2 servers
         if r2p2:
@@ -187,6 +190,7 @@ class RSCSConsole(object):
                     server_conn,
                     f"sed -i '/^preemption_delay/ cpreemption_delay=500000' {serv_dir}/shinjuku.conf", bg=True)
 
+    # Kill the process of p4 program in the switch
     def kill_switch(self):
         if self.switch_conns == []:
             self.connect(switch, self.switch_conns)
@@ -219,6 +223,7 @@ class RSCSConsole(object):
         self.kill_server()
         self.kill_client()
 
+    # Run tp4 program, including control plane and data plane
     def run_switch(self, policy):
         if self.switch_conns == []:
             self.connect(switch, self.switch_conns)
@@ -226,7 +231,6 @@ class RSCSConsole(object):
         # Stop the currently running switch
         self.kill_switch()
 
-        # Run control plane and data plane
         self.exe(
             self.switch_conns[0],
             f'cd {switch_sde_dir}; . ./set_sde.bash; {scheduling_cmds[policy][0]}', bg=True)
@@ -299,6 +303,7 @@ class RSCSConsole(object):
                 f'cd {cli_dir}; . .env; export passwd={client_conn["password"]}; ./tools/tools.sh setup_dpdk',
                 read=True)
 
+    # Compile p4 program
     def compile_switch(self, prog_name):
         if self.switch_conns == []:
             self.connect(switch, self.switch_conns)
@@ -309,6 +314,7 @@ class RSCSConsole(object):
             self.switch_conns[0],
             f'cd {switch_sde_dir}; . ./set_sde.bash; {p4_build} {prog_path} > {remote_switch_dir}switch_code/logs/p4_compile.log 2>&1 &', bg=False)
 
+    # Set up env for R2P2 worker
     def run_r2p2_server_1(self):
         if self.server_conns == []:
             self.connect(servers, self.server_conns)
@@ -397,7 +403,7 @@ class RSCSConsole(object):
                     print()
             print()
 
-    # Change queue setting for "port" distributions
+    # Change queue setting for "port" distributions in "shinjuku.conf"
     def set_server_queue_to_head(self, dist, recover=False, rocks_db=False):
         if self.server_conns == []:
             self.connect(servers, self.server_conns)
@@ -432,6 +438,7 @@ class RSCSConsole(object):
         print(f'\nServer queue setting updated\n')
 
     # Helper for fig.11: configure server 5-8 to use less cores
+    # Change the number of workers in shinjuku.conf
     def reduce_server_cores(self, recover=False):
         if self.server_conns == []:
             self.connect(servers, self.server_conns)
@@ -475,6 +482,7 @@ class RSCSConsole(object):
         else:
             self.build_and_run_servers(rocks_db)
 
+    # The general function to run a test, including run the servers, teh switch and the clients
     def run_test(self, scheduling_policies, dist_loads, hetero=False, rocks_db=False, r2p2=False, cs_cli=False, run_s=10):
         if self.client_conns == []:
             self.connect(clients, self.client_conns)

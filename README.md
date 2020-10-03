@@ -74,7 +74,9 @@
     - Building DPDK takes time, we reserved 180s for it to complete.<br>
   - Building the server is incorporated in running the server.<br>
 - Build the clients<br>
-  - For all kinds of clients, set up the DPDK environment variables, make/build the client.<br>
+  - For all kinds of clients, install DPDK, and set correct environment variables).<br>
+    - `python3 console.py install_dpdk` <br>
+  - make/build the client.<br>
 - Run the programs<br>
   - Run p4 program on the switch<br>
     - `python3 console.py run_switch rscs`<br>
